@@ -1,7 +1,7 @@
 from groq import Groq
 import streamlit as st
 
-def call_groq(prompt, system_message="You are a helpful AI assistant.", model="llama3-8b-8192"):
+def call_groq(prompt, system_message="You are a helpful AI assistant.", model="llama-3.3-70b-versatile"):
     try:
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         response = client.chat.completions.create(
