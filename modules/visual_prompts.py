@@ -7,6 +7,7 @@ def render():
 
     script_input = st.text_area(
         "📋 Paste your script here:",
+        key="visual_prompts_input",
         value=st.session_state.get("current_script", ""),
         height=200,
         placeholder="Paste your script from Tab 2..."
@@ -14,23 +15,31 @@ def render():
 
     col1, col2 = st.columns(2)
     with col1:
-        visual_style = st.selectbox("🎨 Visual Style:", [
-            "Cinematic & Dark",
-            "Realistic & Documentary",
-            "Illustrated & Artistic",
-            "Vintage & Retro",
-            "Futuristic & Sci-Fi"
-        ])
+        visual_style = st.selectbox(
+            "🎨 Visual Style:",
+            key="visual_style_select",
+            options=[
+                "Cinematic & Dark",
+                "Realistic & Documentary",
+                "Illustrated & Artistic",
+                "Vintage & Retro",
+                "Futuristic & Sci-Fi"
+            ]
+        )
     with col2:
-        image_tool = st.selectbox("🖼️ Target Image Tool:", [
-            "Midjourney",
-            "DALL-E",
-            "Stable Diffusion",
-            "Adobe Firefly",
-            "Leonardo AI"
-        ])
+        image_tool = st.selectbox(
+            "🖼️ Target Image Tool:",
+            key="image_tool_select",
+            options=[
+                "Midjourney",
+                "DALL-E",
+                "Stable Diffusion",
+                "Adobe Firefly",
+                "Leonardo AI"
+            ]
+        )
 
-    if st.button("🎨 Generate Visual Prompts"):
+    if st.button("🎨 Generate Visual Prompts", key="visual_generate_btn"):
         if script_input.strip() == "":
             st.warning("Please paste your script first!")
         else:
@@ -64,6 +73,7 @@ def render():
 
                 st.download_button(
                     label="📥 Download Visual Prompts",
+                    key="visual_download_btn",
                     data=result,
                     file_name="omni_studio_visuals.txt",
                     mime="text/plain"
