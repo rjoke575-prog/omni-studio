@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 from core.llm_client import call_groq
 
@@ -7,6 +8,7 @@ def render():
 
     script_input = st.text_area(
         "📋 Paste your script here:",
+        key="voiceover_script_input",
         value=st.session_state.get("current_script", ""),
         height=200,
         placeholder="Paste your script from Tab 2..."
@@ -14,23 +16,31 @@ def render():
 
     col1, col2 = st.columns(2)
     with col1:
-        voice_tone = st.selectbox("🎭 Voice Tone:", [
-            "Deep & Dramatic",
-            "Calm & Authoritative",
-            "Mysterious & Whispery",
-            "Energetic & Exciting",
-            "Sad & Reflective"
-        ])
+        voice_tone = st.selectbox(
+            "🎭 Voice Tone:",
+            key="voice_tone_select",
+            options=[
+                "Deep & Dramatic",
+                "Calm & Authoritative",
+                "Mysterious & Whispery",
+                "Energetic & Exciting",
+                "Sad & Reflective"
+            ]
+        )
     with col2:
-        engine = st.selectbox("🔧 Target TTS Engine:", [
-            "Chatterbox TTS (Best Quality)",
-            "Kokoro HuggingFace (Browser)",
-            "TextaVoice.com (Easy)"
-        ])
+        engine = st.selectbox(
+            "🔧 Target TTS Engine:",
+            key="engine_select",
+            options=[
+                "Chatterbox TTS (Best Quality)",
+                "Kokoro HuggingFace (Browser)",
+                "TextaVoice.com (Easy)"
+            ]
+        )
 
     st.divider()
 
-    if st.button("🎙️ Generate TTS-Ready Script"):
+    if st.button("🎙️ Generate TTS-Ready Script", key="tts_generate_btn"):
         if script_input.strip() == "":
             st.warning("Please paste your script first!")
         else:
@@ -84,7 +94,7 @@ def render():
                     clearly labeled CHUNK 1, CHUNK 2 etc for easy pasting.
                     """
 
-                else:  # TextaVoice
+                else:
                     system = """You are a TTS direction expert for TextaVoice.com.
                     TextaVoice has a 2000 character limit per conversion.
                     Split text at natural sentence boundaries."""
@@ -109,14 +119,25 @@ def render():
                 result = call_groq(prompt, system)
                 st.session_state.current_tts = result
 
+                # Clean version — strips all tags for direct TTS pasting
+                clean_result = re.sub(r'\[EMOTION:[^\]]*\]', '', result)
+                clean_result = re.sub(r'\[PACE:[^\]]*\]', '', clean_result)
+                clean_result = re.sub(r'\[PAUSE:[^\]]*\]', '', clean_result)
+                clean_result = re.sub(r'\[PAUSE:[^\]]*\]', '', clean_result)
+                clean_result = re.sub(r'\[B-ROLL CUE:[^\]]*\]', '', clean_result)
+                clean_result = re.sub(r'\[DRAMATIC PAUSE\]', '', clean_result)
+                clean_result = re.sub(r'\[SLOW DOWN\]', '', clean_result)
+                clean_result = re.sub(r'\*\*(.*?)\*\*', r'\1', clean_result)
+                clean_result = re.sub(r'\n\s*\n', '\n\n', clean_result).strip()
+
             st.success("✅ TTS Script Ready!")
 
-            # Show engine-specific instructions
+            # Engine-specific instructions
             if "Chatterbox" in engine:
                 st.info("""
                 **How to use with Chatterbox TTS:**
                 1. Go to → huggingface.co/spaces/ResembleAI/Chatterbox
-                2. Paste your tagged script
+                2. Paste the CLEAN VERSION below into the text box
                 3. Set emotion_intensity based on recommendation above
                 4. Click Generate → Download MP3
                 """)
@@ -124,7 +145,7 @@ def render():
                 st.info("""
                 **How to use with Kokoro HuggingFace:**
                 1. Go to → huggingface.co/spaces/Remsky/Kokoro-TTS-Zero
-                2. Paste each chunk one at a time
+                2. Paste each chunk from the CLEAN VERSION below
                 3. Select voice style → Generate → Download
                 4. Stitch audio files in any free editor
                 """)
@@ -132,19 +153,41 @@ def render():
                 st.info("""
                 **How to use with TextaVoice.com:**
                 1. Go to → textavoice.com
-                2. Paste CHUNK 1 → set recommended settings → Generate → Download
-                3. Repeat for each chunk
+                2. Paste each chunk from the CLEAN VERSION below
+                3. Set recommended settings → Generate → Download
                 4. Stitch audio files together
                 """)
 
+            st.markdown("### 🎬 Director's Copy — Your Reference")
             st.markdown(result)
 
-            st.download_button(
-                label="📥 Download TTS Script",
-                data=result,
-                file_name="omni_studio_tts_export.txt",
-                mime="text/plain"
+            st.divider()
+
+            st.markdown("### 🎙️ Clean Audio Copy — Paste Into TTS")
+            st.text_area(
+                "Copy this and paste directly into your TTS engine — no tags, pure narration:",
+                key="clean_tts_output",
+                value=clean_result,
+                height=300,
             )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.download_button(
+                    label="📥 Download Director's Copy",
+                    key="director_download_btn",
+                    data=result,
+                    file_name="omni_studio_director_copy.txt",
+                    mime="text/plain"
+                )
+            with col2:
+                st.download_button(
+                    label="📥 Download Clean Audio Copy",
+                    key="clean_download_btn",
+                    data=clean_result,
+                    file_name="omni_studio_clean_audio.txt",
+                    mime="text/plain"
+                )
 
     st.divider()
     st.caption("🔧 More TTS engines coming soon — modular system makes adding them instant.")
